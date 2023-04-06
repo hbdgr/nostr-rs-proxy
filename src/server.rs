@@ -10,7 +10,9 @@ use crate::config::Settings;
 // ------------------ InputWebsocket
 
 /// Define HTTP actor
-struct InputWebsocket;
+struct InputWebsocket {
+    pub relays: Option<Vec<String>>, // external relays
+}
 
 impl Actor for InputWebsocket {
     type Context = ws::WebsocketContext<Self>;
@@ -20,6 +22,7 @@ impl Actor for InputWebsocket {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for InputWebsocket {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         debug!("[handle] {:?}", msg);
+        debug!("[i] {:?}", self.relays);
 
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
@@ -35,8 +38,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for InputWebsocket {
     }
 }
 
-async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let resp = ws::start(InputWebsocket {}, &req, stream);
+async fn index(
+    req: HttpRequest,
+    stream: web::Payload,
+    relays: web::Data<Option<Vec<String>>>,
+) -> Result<HttpResponse, Error> {
+    let resp = ws::start(InputWebsocket {
+        relays: relays.get_ref().to_owned()
+    }, &req, stream);
 
     info!("[index] {:?}", resp);
     resp
@@ -70,10 +79,17 @@ impl Server {
             Ok(k) => k,
         };
 
+        let relays = self.settings.sources.relays.clone();
+
         info!("listening on: {:?}", socket_addr);
-        HttpServer::new(|| App::new().route("/", web::get().to(index)))
-            .bind(socket_addr)?
-            .run()
-            .await
+        HttpServer::new(move ||
+            App::new()
+                .app_data(web::Data::new(relays.clone()))
+                .route("/", web::get().to(index))
+        )
+        .workers(2)
+        .bind(socket_addr)?
+        .run()
+        .await
     }
 }
