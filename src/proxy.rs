@@ -1,58 +1,65 @@
-use tracing::{warn, debug};
-use actix::{Actor, Context, StreamHandler};
+use tracing::{info, debug};
 use actix_web_actors::ws;
 
 use crate::config::Settings;
 
-// ------------------ InputWebsocket
+use crate::messages::{ClientMessage, Connect, Disconnect, WsMessage};
+use actix::prelude::{Actor, Context, Handler, Recipient};
+use uuid::Uuid;
 
-/// Define HTTP actor
-struct InputWebsocket {
-    pub relays: Option<Vec<String>>, // external relays
+// ------------------ Proxy Server
+
+type Socket = Recipient<WsMessage>;
+
+pub struct Proxy {
+    relays: Vec<Socket>,
 }
 
-impl Actor for InputWebsocket {
-    type Context = ws::WebsocketContext<Self>;
-}
+impl Proxy {
+    pub fn new(settings: &Settings) -> Self {
+        debug!("Proxy: new()");
 
-/// Handler for ws::Message message
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for InputWebsocket {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        debug!("[handle] {:?}", msg);
-        debug!("[i] {:?}", self.relays);
+        let relays = Vec::new();
+        for r in settings.sources.relays.iter().flatten() {
+            info!("rel: {:?}", r);
+        }
 
-        match msg {
-            Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
-            Ok(ws::Message::Text(text)) => {
-                // TODO send to list of relays
-                ctx.text(text)
-            },
-            Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
-            _ => {
-                warn!("[handle] unexpected msg (type): {:?}", msg);
-            },
+        Proxy {
+            relays,
         }
     }
 }
 
-// ------------------ Proxy Server
-
-pub struct Proxy {
-    settings: Settings,
+impl Proxy {
+    fn send_message(&self, message: &str, id_to: &Uuid) {
+    }
 }
 
 impl Actor for Proxy {
     type Context = Context<Self>;
 }
 
-impl Proxy {
-    pub fn new(settings: &Settings) -> Self {
-        Proxy {
-            settings: settings.clone(),
-        }
+// TODO allow only specified address to connect
+impl Handler<Connect> for Proxy {
+    type Result = ();
+
+    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) {
+        debug!("Proxy: handle [Connect], msg: {:?}", msg);
     }
 }
 
-// TODO allow only specified address to connect
-// impl Handler<Connect> for Proxy
+impl Handler<Disconnect> for Proxy {
+    type Result = ();
 
+    fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
+        debug!("Proxy: handle [Disconnect], msg: {:?}", msg);
+    }
+}
+
+impl Handler<ClientMessage> for Proxy {
+    type Result = ();
+
+    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+        debug!("Proxy: handle [ClientMessage], msg: {:?}", msg);
+    }
+}

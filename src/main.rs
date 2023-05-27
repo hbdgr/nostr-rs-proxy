@@ -1,31 +1,28 @@
 mod config;
 mod proxy;
 
-use proxy::Proxy;
 
-mod ws;
-mod lobby;
+mod proxy_connection;
 mod messages;
-mod start_connection;
 
-use tracing::info;
+use proxy::Proxy;
+use tracing::{info,debug};
 
 // ---------------------------------------------------------
 use actix_web::{web, App, HttpServer};
 use actix::Actor;
 
-use lobby::Lobby;
-use start_connection::start_connection as start_connection_route;
+use proxy_connection::start;
 // ---------------------------------------------------------
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // standard logging
+    tracing_subscriber::fmt::try_init().unwrap();
+
     let todolater: Option<String> = None;
     let settings = config::Settings::new(&todolater);
     let proxy = Proxy::new(&settings).start();
-
-    // standard logging
-    tracing_subscriber::fmt::try_init().unwrap();
 
     let addr = format!(
         "{}:{}",
@@ -33,7 +30,7 @@ async fn main() -> std::io::Result<()> {
         settings.network.port
     );
 
-    // println!("relays?: {:?}", settings.sources);
+    debug!("main: relays: {:?}", settings.sources);
 
     let socket_addr: String = match addr.parse() {
         Err(_) => panic!("listening address not valid"),
@@ -43,7 +40,7 @@ async fn main() -> std::io::Result<()> {
     info!("listening on: {:?}", socket_addr);
     HttpServer::new(move ||
         App::new()
-            .service(start_connection_route)
+            .service(start)
             .app_data(web::Data::new(proxy.clone()))
     )
     .workers(2)
