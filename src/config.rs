@@ -13,7 +13,7 @@ pub struct Network {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct Sources {
-    pub relays: Option<Vec<String>>, // external relays
+    pub relays: Option<Vec<String>>, // external relays addresses
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -22,6 +22,8 @@ pub async fn start(
     stream: Payload,
     srv: Data<Addr<Proxy>>,
 ) -> Result<HttpResponse, Error> {
+    debug!("ProxyConnection: srv: {:?}", srv.get_ref());
+
     let ws = ProxyConnection::new(
         srv.get_ref().clone()
     );
@@ -123,10 +125,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ProxyConnection {
 }
 
 impl Handler<WsMessage> for ProxyConnection {
-    type Result = ();
+    type Result = Result<bool, std::io::Error>;
 
-    fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) -> Self::Result {
         debug!("ProxyConnection: handle [WsMessage]: {:?}", msg);
         ctx.text(msg.0);
+        Ok(true)
     }
 }

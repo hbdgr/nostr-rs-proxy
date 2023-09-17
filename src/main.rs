@@ -1,6 +1,6 @@
 mod config;
 mod proxy;
-
+mod relay_client;
 
 mod proxy_connection;
 mod messages;
@@ -22,7 +22,9 @@ async fn main() -> std::io::Result<()> {
 
     let todolater: Option<String> = None;
     let settings = config::Settings::new(&todolater);
-    let proxy = Proxy::new(&settings).start();
+    let proxy = Proxy::new(&settings)
+        .await
+        .start();
 
     let addr = format!(
         "{}:{}",
