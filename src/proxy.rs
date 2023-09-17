@@ -12,14 +12,14 @@ use tracing::{info, debug};
 type Socket = Recipient<WsMessage>;
 
 pub struct Proxy {
-    relay_actors: Vec<Addr<RelayClient>>,
+    relays: Vec<RelayClient>,
 }
 
 impl Proxy {
     pub async fn new(settings: &Settings) -> Self {
         debug!("Proxy: new()");
 
-        let mut relay_actors = Vec::new();
+        let mut relays = Vec::new();
 
         for addr in settings.sources.relays.iter().flatten() {
             info!("rel addr: {addr:?}");
@@ -31,19 +31,27 @@ impl Proxy {
                 .await;
 
             // start actors
-            relay_actors.push(
-                relay.start()
+            relays.push(
+                relay
             );
         }
 
         Proxy {
-            relay_actors,
+            relays,
         }
     }
 }
 
 impl Proxy {
     fn send_message(&self, message: &str, id_to: &Uuid) {
+    }
+
+    fn send_to_relays(&self, msg: ClientMessage, ctx: &mut Context<Self>) {
+        debug!("Proxy: send_to_relays, msg: {:?}", msg);
+
+        for relay in self.relays.iter() {
+            relay.send_to_relay(msg.clone(), ctx);
+        }
     }
 }
 
@@ -73,8 +81,9 @@ impl Handler<Disconnect> for Proxy {
 impl Handler<ClientMessage> for Proxy {
     type Result = Result<bool, std::io::Error>;
 
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: ClientMessage, ctx: &mut Context<Self>) -> Self::Result {
         debug!("Proxy: handle [ClientMessage], msg: {:?}", msg);
+        self.send_to_relays(msg, ctx);
         Ok(true)
     }
 }

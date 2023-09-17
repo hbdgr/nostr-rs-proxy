@@ -22,7 +22,7 @@ pub struct Disconnect {
 }
 
 #[derive(Debug)]
-#[derive(Message)]
+#[derive(Message, Clone)]
 #[rtype(result = "Result<bool, std::io::Error>")]
 pub struct ClientMessage {
     pub id: Uuid,

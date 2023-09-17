@@ -81,6 +81,7 @@ impl Actor for ProxyConnection {
 
 impl ProxyConnection {
     fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
+        let client_id = self.id;
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
             if Instant::now().duration_since(act.hb) > CLIENT_INTERVAL {
                 println!("disconnectiong due to failed heartbeat");
@@ -91,6 +92,7 @@ impl ProxyConnection {
                 return;
             }
 
+            debug!("[{:?}] ProxyConnection: send [Ping]", act.id);
             ctx.ping(b"PING");
         });
     }
@@ -100,25 +102,32 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ProxyConnection {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => {
+                debug!("ProxyConnection: handle [Ping]: {:?}", msg);
                 self.hb = Instant::now();
                 ctx.pong(&msg);
             }
             Ok(ws::Message::Pong(_)) => {
+                debug!("[{:?}] ProxyConnection: handle [Pong]", self.id);
                 self.hb = Instant::now();
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             Ok(ws::Message::Close(reason)) => {
+                debug!("ProxyConnection: handle [Close]: {:?}", reason);
                 ctx.close(reason);
                 ctx.stop();
             }
             Ok(ws::Message::Continuation(_)) => {
+                debug!("ProxyConnection: handle [Continuation]");
                 ctx.stop();
             }
             Ok(ws::Message::Nop) => {},
-            Ok(Text(s)) => self.proxy_addr.do_send(ClientMessage {
-                id: self.id,
-                msg: s.to_string(),
-            }),
+            Ok(Text(s)) => {
+                debug!("ProxyConnection: handle [Text]: {:?}", s);
+                self.proxy_addr.do_send(ClientMessage {
+                    id: self.id,
+                    msg: s.to_string(),
+                });
+            }
             Err(e) => panic!("{:?}", e),
         }
     }

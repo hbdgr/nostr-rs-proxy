@@ -1,9 +1,11 @@
 use crate::messages::ClientMessage;
+use crate::proxy::Proxy;
 
 // use actix_web::web::Bytes;
 use awc::BoxedSocket;
 // use futures_util::{SinkExt as _, StreamExt as _};
 use tracing::{info,debug,warn};
+
 
 use actix_codec::Framed;
 use actix_http::ws::Codec;
@@ -68,27 +70,8 @@ impl RelayClient {
         //     }
         // }
     }
-}
 
-// Provide Actor implementation for client
-impl Actor for RelayClient {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Context<Self>) {
-       println!("Actor is alive");
-    }
-
-    fn stopped(&mut self, ctx: &mut Context<Self>) {
-       println!("Actor is stopped");
-    }
-}
-
-// Define handler for `ClientMessage` message
-impl Handler<ClientMessage> for RelayClient {
-    type Result = Result<bool, std::io::Error>;
-
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
-        println!("ClientMessage received: {:?}", msg);
-        Ok(true)
+    pub fn send_to_relay(&self, msg: ClientMessage, ctx: &mut Context<Proxy>) {
+        debug!("RelayClient: send, msg: {:?}, ctx: {:?}", msg, ctx);
     }
 }
