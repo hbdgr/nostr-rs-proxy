@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
             .service(start)
             .app_data(web::Data::new(proxy.clone()))
     )
-    .workers(2)
+    .workers(10)
     .bind(socket_addr)?
     .run()
     .await

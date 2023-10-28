@@ -4,8 +4,11 @@ use crate::messages::{ClientMessage, Connect, Disconnect, WsMessage};
 use actix::prelude::{Actor, Addr, Context, Handler, Recipient};
 use uuid::Uuid;
 
-use tracing::{info, debug};
+use std::sync::{Arc};
+use tokio::runtime;
+use tokio::sync::{mpsc, Mutex};
 
+use tracing::{info, debug};
 
 // ------------------ Proxy Server
 
@@ -23,12 +26,11 @@ impl Proxy {
 
         for addr in settings.sources.relays.iter().flatten() {
             info!("rel addr: {addr:?}");
-            let mut relay = RelayClient::new(addr);
 
-            // connect to relays
-            relay
-                .connect()
-                .await;
+            // Wrap RelayClient in Arc<Mutex>
+            let relay = RelayClient::new(addr.to_string());
+
+            println!("Adding new relay to Proxy: {:?}", relay);
 
             // start actors
             relays.push(
@@ -43,14 +45,17 @@ impl Proxy {
 }
 
 impl Proxy {
-    fn send_message(&self, message: &str, id_to: &Uuid) {
-    }
+    // fn send_message(&self, message: &str, id_to: &Uuid) {
+    // }
 
     fn send_to_relays(&self, msg: ClientMessage, ctx: &mut Context<Self>) {
-        debug!("Proxy: send_to_relays, msg: {:?}", msg);
+        debug!("Proxy: send_to_relays, msg: {:?}, ctx: {:?}", msg, ctx);
 
-        for relay in self.relays.iter() {
-            relay.send_to_relay(msg.clone(), ctx);
+        for relay in &self.relays {
+            let msg_clone = msg.clone();
+
+            // Call the method on the RelayClient
+            let _ = relay.schedule_request(msg_clone);
         }
     }
 }
@@ -83,7 +88,9 @@ impl Handler<ClientMessage> for Proxy {
 
     fn handle(&mut self, msg: ClientMessage, ctx: &mut Context<Self>) -> Self::Result {
         debug!("Proxy: handle [ClientMessage], msg: {:?}", msg);
-        self.send_to_relays(msg, ctx);
+
+        self.send_to_relays(msg.clone(), ctx);
+
         Ok(true)
     }
 }
