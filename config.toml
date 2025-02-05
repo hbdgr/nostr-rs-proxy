@@ -1,0 +1,15 @@
+# configuration
+
+[network]
+# Bind to this network address
+address = "0.0.0.0"
+
+# Listen on this port
+port = 8085
+
+[sources]
+# External sources, nostr relay list
+relays = [
+  "ws://0.0.0.0:8080",
+  "wss://echo.websocket.events",
+]
