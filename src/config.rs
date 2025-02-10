@@ -13,7 +13,7 @@ pub struct Network {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct Sources {
-    pub relays: Option<Vec<String>>, // external relays addresses
+    pub relays: Vec<String>, // external relays addresses
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,7 +65,7 @@ impl Default for Settings {
                 address: "0.0.0.0".to_owned(),
             },
             sources: Sources {
-                relays: None,
+                relays: Vec::new(),
             },
         }
     }

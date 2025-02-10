@@ -1,14 +1,36 @@
 mod config;
 mod connection;
+mod cache;
 
 use std::io::Error as IoError;
 
 use config::Settings;
-use tracing::{info, warn};
+use tracing::{info, debug, warn};
 
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 
 // ---------------------------------------------------------
+
+// TODO
+// struct ProxyMetrics {
+//     cache_hits: AtomicU64,
+//     cache_misses: AtomicU64,
+//     relay_errors: AtomicU64,
+// }
+
+// TODO
+// struct RelayPool {
+//     connections: HashMap<String, WebSocketStream>,
+//     max_retries: usize,
+// }
+
+async fn handle_connection(raw_stream: TcpStream, relay_urls: Vec<String>) {
+    if let Ok(conn) = connection::Connection::new(raw_stream, &relay_urls).await {
+        if let Err(e) = conn.run().await {
+            warn!("Connection error: {}", e);
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
@@ -27,12 +49,14 @@ async fn main() -> Result<(), IoError> {
 
     // Let's spawn the handling of each connection in a separate task
     while let Ok((stream, addr)) = listener.accept().await {
+        info!("Incoming TCP connection from: {}", addr);
+
         let sources = settings.sources.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = connection::handle_connection(sources, stream, addr).await {
-                warn!("Connection error: {}", e);
-            }
+            debug!("main: handle_connection");
+            handle_connection(stream, sources.relays).await;
+            debug!("main: handle_connection end");
         });
     }
 
