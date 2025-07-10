@@ -25,7 +25,7 @@ use tokio::net::{TcpListener, TcpStream};
 // }
 
 async fn handle_connection(raw_stream: TcpStream, relay_urls: Vec<String>) {
-    if let Ok(conn) = connection::Connection::new(raw_stream, &relay_urls).await {
+    if let Ok(mut conn) = connection::Connection::new(raw_stream, &relay_urls).await {
         if let Err(e) = conn.run().await {
             warn!("Connection error: {}", e);
         }

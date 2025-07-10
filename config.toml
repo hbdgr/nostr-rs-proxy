@@ -11,5 +11,6 @@ port = 8085
 # External sources, nostr relay list
 relays = [
   "ws://0.0.0.0:8080",
-  "wss://echo.websocket.events",
+  "ws://0.0.0.0:8081",
+  # "wss://echo.websocket.events",
 ]

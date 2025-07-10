@@ -17,9 +17,12 @@ This proxy provides a unified way to connect to multiple Nostr relays, consolida
 
 ## TODOs
 
-- [ ] Memory cache  
-- [ ] Robust reconnection mechanism: Seamlessly reconnect to configured relays in case of disconnections.  
-- [ ] Frontend UI: Provide an interface for monitoring the proxy’s performance and updating its configuration.
+- [x] Memory cache: Event deduplication  
+- [ ] Cache TTL: Automatic expiration  
+- [x] Message handling: Basic REQ/EVENT support  
+- [ ] Relay reconnection: Persistent connections  
+- [ ] Metrics collection: Event counters  
+- [ ] Frontend UI: Monitoring dashboard  
 
 ## Configuration
 

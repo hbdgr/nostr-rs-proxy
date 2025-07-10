@@ -4,19 +4,28 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Core dependencies
+serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 config = { version = "0.14", features = ["toml"] }
+tokio = { version = "1.37", features = ["full"] }
 
+# Logging
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
+# Async utilities
 futures-channel = "0.3"
 futures-util = "0.3"
 futures = "0.3"
 
-tokio = { version = "1", features = ["full"] }
+# WebSocket
+tungstenite = "0.21.0"
 tokio-tungstenite = { version = "0.26", features = ["native-tls"] }
 
-nostr = "0.39.0"
+# Nostr-specific
+nostr = "0.42.2"
+
+# Utilities
 lru = "0.13.0"
 thiserror = "2.0.11"
